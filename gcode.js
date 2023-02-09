@@ -1,0 +1,71 @@
+const fs = require("fs");
+
+console.log(process.argv);
+
+if (process.argv.length < 5) {
+  console.log(`Usage: node gcode.js <gcode file> <speed> <passes>`);
+  process.exit(1);
+}
+
+const fileName = process.argv[2];
+const speed = Number(process.argv[3]);
+const passes = Number(process.argv[4]);
+
+let outputFile = fileName.replace(".gcode", `_${speed}x${passes}.gcode`);
+if (process.argv[5]) {
+  outputFile = process.argv[5];
+}
+
+if (fileName === outputFile) {
+  console.log(`file output is the same, are you sure? Y/n`);
+  // TODO yes no input
+  process.exit(1);
+}
+
+if (isNaN(speed)) {
+  console.log(`Speed must be a number`);
+  process.exit(1);
+}
+
+if (isNaN(passes)) {
+  console.log(`Passes must be a number`);
+  process.exit(1);
+}
+
+let content = fs.readFileSync(fileName, "utf8");
+// we want to keep laser head at the current position and not go to home
+content = content.replaceAll("G90", "");
+
+const match = /G1 F[0-9]+ X/.exec(content);
+
+if (match === null) {
+  console.log(
+    "Coult not find current speed. Gcode might miss some information..."
+  );
+  process.exit(1);
+}
+
+console.log(`Current speed ${match[0].slice(4, -2)} replaced by ${speed}`);
+const newSpeed = `G1 F${speed} X`;
+content = content.replaceAll(match[0], newSpeed);
+
+const lines = content.split("\n");
+let chunks = [];
+fs.writeFileSync(outputFile, `; Speed: ${speed} Passes: ${passes}`);
+for (const line of lines) {
+  if (line.startsWith(newSpeed)) {
+    chunks.push(line);
+  } else {
+    if (chunks.length > 0) {
+      fs.writeFileSync(
+        outputFile,
+        `${chunks.join("\n")}\n;---\n`.repeat(passes),
+        { flag: "a" }
+      );
+      chunks = [];
+    }
+    fs.writeFileSync(outputFile, line + "\n", { flag: "a" });
+  }
+}
+
+console.log("Done", outputFile);
