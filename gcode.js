@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require("fs");
 
 console.log(process.argv);
@@ -57,11 +59,24 @@ for (const line of lines) {
     chunks.push(line);
   } else {
     if (chunks.length > 0) {
-      fs.writeFileSync(
-        outputFile,
-        `${chunks.join("\n")}\n;---\n`.repeat(passes),
-        { flag: "a" }
-      );
+      if (line.startsWith("; pingpong")) {
+        for (let i = 0; i < chunks.length - 2; i++) {
+          fs.writeFileSync(
+            outputFile,
+            `${chunks[i]}\n${chunks[i + 1]}\n`.repeat(passes) + `;---\n`,
+            { flag: "a" }
+          );
+        }
+        fs.writeFileSync(outputFile, `${chunks[chunks.length - 1]}\n`, {
+          flag: "a",
+        });
+      } else {
+        fs.writeFileSync(
+          outputFile,
+          `${chunks.join("\n")}\n;---\n`.repeat(passes),
+          { flag: "a" }
+        );
+      }
       chunks = [];
     }
     fs.writeFileSync(outputFile, line + "\n", { flag: "a" });
