@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// preview gcode result https://ncviewer.com/
+//
+// use cam.openbuilds.com to convert SVG to gcode
+
 const fs = require("fs");
 
 console.log(process.argv);
